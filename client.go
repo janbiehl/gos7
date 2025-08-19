@@ -12,29 +12,29 @@ import (
 
 const (
 	// Area ID
-	s7areape = 0x81 //process inputs
-	s7areapa = 0x82 //process outputs
-	s7areamk = 0x83 //Merkers
-	s7areadb = 0x84 //DB
-	s7areact = 0x1C //counters
-	s7areatm = 0x1D //timers
+	S7areape = 0x81 //process inputs
+	S7areapa = 0x82 //process outputs
+	S7areamk = 0x83 //Merkers
+	S7areadb = 0x84 //DB
+	S7areact = 0x1C //counters
+	S7areatm = 0x1D //timers
 
 	// Word Length
-	s7wlbit     = 0x01 //Bit (inside a word)
-	s7wlbyte    = 0x02 //Byte (8 bit)
-	s7wlChar    = 0x03
-	s7wlword    = 0x04 //Word (16 bit)
-	s7wlint     = 0x05
-	s7wldword   = 0x06 //Double Word (32 bit)
-	s7wldint    = 0x07
-	s7wlreal    = 0x08 //Real (32 bit float)
-	s7wlcounter = 0x1C //Counter (16 bit)
-	s7wltimer   = 0x1D //Timer (16 bit)
+	S7wlbit     = 0x01 //Bit (inside a word)
+	S7wlbyte    = 0x02 //Byte (8 bit)
+	S7wlChar    = 0x03
+	S7wlword    = 0x04 //Word (16 bit)
+	S7wlint     = 0x05
+	S7wldword   = 0x06 //Double Word (32 bit)
+	S7wldint    = 0x07
+	S7wlreal    = 0x08 //Real (32 bit float)
+	S7wlcounter = 0x1C //Counter (16 bit)
+	S7wltimer   = 0x1D //Timer (16 bit)
 
 	// PLC Status
-	s7CpuStatusUnknown = 0
-	s7CpuStatusRun     = 8
-	s7CpuStatusStop    = 4
+	S7CpuStatusUnknown = 0
+	S7CpuStatusRun     = 8
+	S7CpuStatusStop    = 4
 
 	//size header
 	sizeHeaderRead  int = 31 // Header Size when Reading
@@ -73,48 +73,48 @@ func NewClient2(packager Packager, transporter Transporter) Client {
 
 //implement of the interface AGReadDB
 func (mb *client) AGReadDB(dbnumber int, start int, size int, buffer []byte) (err error) {
-	return mb.readArea(s7areadb, dbnumber, start, size, s7wlbyte, buffer)
+	return mb.readArea(S7areadb, dbnumber, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGWriteDB
 func (mb *client) AGWriteDB(dbNumber int, start int, size int, buffer []byte) (err error) {
-	return mb.writeArea(s7areadb, dbNumber, start, size, s7wlbyte, buffer)
+	return mb.writeArea(S7areadb, dbNumber, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGReadMB
 func (mb *client) AGReadMB(start int, size int, buffer []byte) (err error) {
-	return mb.readArea(s7areamk, 0, start, size, s7wlbyte, buffer)
+	return mb.readArea(S7areamk, 0, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGWriteMB
 func (mb *client) AGWriteMB(start int, size int, buffer []byte) (err error) {
-	return mb.writeArea(s7areamk, 0, start, size, s7wlbyte, buffer)
+	return mb.writeArea(S7areamk, 0, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGReadEB
 func (mb *client) AGReadEB(start int, size int, buffer []byte) (err error) {
-	return mb.readArea(s7areape, 0, start, size, s7wlbyte, buffer)
+	return mb.readArea(S7areape, 0, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGWriteEB
 func (mb *client) AGWriteEB(start int, size int, buffer []byte) (err error) {
-	return mb.writeArea(s7areape, 0, start, size, s7wlbyte, buffer)
+	return mb.writeArea(S7areape, 0, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGReadAB
 func (mb *client) AGReadAB(start int, size int, buffer []byte) (err error) {
-	return mb.readArea(s7areapa, 0, start, size, s7wlbyte, buffer)
+	return mb.readArea(S7areapa, 0, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGWriteAB
 func (mb *client) AGWriteAB(start int, size int, buffer []byte) (err error) {
-	return mb.writeArea(s7areapa, 0, start, size, s7wlbyte, buffer)
+	return mb.writeArea(S7areapa, 0, start, size, S7wlbyte, buffer)
 }
 
 //implement of the interface AGReadTM - read timer
 func (mb *client) AGReadTM(start int, amount int, buffer []byte) (err error) {
 	sbuffer := make([]byte, amount*2)
-	err = mb.readArea(s7areatm, 0, start, amount, s7wltimer, sbuffer)
+	err = mb.readArea(S7areatm, 0, start, amount, S7wltimer, sbuffer)
 	if err == nil {
 		for c := 0; c < amount; c++ {
 			buffer[c] = byte(uint16(sbuffer[c*2+1])<<8 + uint16(sbuffer[c*2]))
@@ -130,14 +130,14 @@ func (mb *client) AGWriteTM(start int, amount int, buffer []byte) (err error) {
 		sbuffer[c*2+1] = byte((uint(buffer[c]) & uint(0xFF00)) >> 8)
 		sbuffer[c*2] = byte(buffer[c] & 0x00FF)
 	}
-	err = mb.writeArea(s7areatm, 0, start, amount, s7wltimer, sbuffer)
+	err = mb.writeArea(S7areatm, 0, start, amount, S7wltimer, sbuffer)
 	return err
 }
 
 //implement of the interface AGReadCT - read counter
 func (mb *client) AGReadCT(start int, amount int, buffer []byte) (err error) {
 	sbuffer := make([]byte, amount*2)
-	err = mb.readArea(s7areact, 0, start, amount, s7wlcounter, sbuffer)
+	err = mb.readArea(S7areact, 0, start, amount, S7wlcounter, sbuffer)
 	if err == nil {
 		for c := 0; c < amount; c++ {
 			buffer[c] = byte(uint(sbuffer[c*2+1])<<8 + uint(sbuffer[c*2]))
@@ -153,7 +153,7 @@ func (mb *client) AGWriteCT(start int, amount int, buffer []byte) (err error) {
 		sbuffer[c*2+1] = byte((uint(buffer[c]) & uint(0xFF00)) >> 8)
 		sbuffer[c*2] = byte(buffer[c] & 0x00FF)
 	}
-	err = mb.writeArea(s7areact, 0, start, amount, s7wlcounter, sbuffer)
+	err = mb.writeArea(S7areact, 0, start, amount, S7wlcounter, sbuffer)
 	return err
 }
 
@@ -163,11 +163,11 @@ func (mb *client) readArea(area int, dbNumber int, start int, amount int, wordLe
 	offset := 0
 	wordSize := 1
 	// Some adjustment
-	if area == s7areact {
-		wordLen = s7wlcounter
+	if area == S7areact {
+		wordLen = S7wlcounter
 	}
-	if area == s7areatm {
-		wordLen = s7wltimer
+	if area == S7areatm {
+		wordLen = S7wltimer
 	}
 	// Calc Word size
 	wordSize = dataSizeByte(wordLen)
@@ -175,13 +175,13 @@ func (mb *client) readArea(area int, dbNumber int, start int, amount int, wordLe
 		return fmt.Errorf(ErrorText(errIsoInvalidDataSize))
 	}
 
-	if wordLen == s7wlbit {
+	if wordLen == S7wlbit {
 		amount = 1 // Only 1 bit can be transferred at time
 	} else {
-		if wordLen != s7wlcounter && wordLen != s7wltimer {
+		if wordLen != S7wlcounter && wordLen != S7wltimer {
 			amount = amount * wordSize
 			wordSize = 1
-			wordLen = s7wlbyte
+			wordLen = S7wlbyte
 		}
 	}
 
@@ -203,13 +203,13 @@ func (mb *client) readArea(area int, dbNumber int, start int, amount int, wordLe
 		// Set DB Number
 		request.Data[27] = byte(area)
 		// Set Area
-		if area == s7areadb {
+		if area == S7areadb {
 			binary.BigEndian.PutUint16(request.Data[25:], uint16(dbNumber))
 			//SetWordAt(request.Data, 25, uint16(DBNumber))
 		}
 
 		// Adjusts Start and word length
-		if wordLen == s7wlbit || wordLen == s7wlcounter || wordLen == s7wltimer {
+		if wordLen == S7wlbit || wordLen == S7wlcounter || wordLen == S7wltimer {
 			address = start
 			request.Data[22] = byte(wordLen)
 		} else {
@@ -261,11 +261,11 @@ func (mb *client) writeArea(area int, dbnumber int, start int, amount int, wordl
 	wordSize := 1
 
 	// Some adjustment
-	if area == s7areact {
-		wordlen = s7wlcounter
+	if area == S7areact {
+		wordlen = S7wlcounter
 	}
-	if area == s7areatm {
-		wordlen = s7wltimer
+	if area == S7areatm {
+		wordlen = S7wltimer
 	}
 
 	// Calc Word size
@@ -274,13 +274,13 @@ func (mb *client) writeArea(area int, dbnumber int, start int, amount int, wordl
 		return fmt.Errorf(ErrorText(errIsoInvalidDataSize))
 	}
 
-	if wordlen == s7wlbit {
+	if wordlen == S7wlbit {
 		amount = 1 // Only 1 bit can be transferred at time
 	} else {
-		if wordlen != s7wlcounter && wordlen != s7wltimer {
+		if wordlen != S7wlcounter && wordlen != S7wltimer {
 			amount = amount * wordSize
 			wordSize = 1
-			wordlen = s7wlbyte
+			wordlen = S7wlbyte
 		}
 	}
 	tt, _ := interface{}(mb.transporter).(*TCPClientHandler)
@@ -310,12 +310,12 @@ func (mb *client) writeArea(area int, dbnumber int, start int, amount int, wordl
 		request.Data[17] = byte(0x05)
 		// Set DB Number
 		request.Data[27] = byte(area)
-		if area == s7areadb {
+		if area == S7areadb {
 			binary.BigEndian.PutUint16(request.Data[25:], uint16(dbnumber))
 			//SetWordAt(request.Data, 25, uint16(dbnumber))
 		}
 		// Adjusts start and word length
-		if wordlen == s7wlbit || wordlen == s7wlcounter || wordlen == s7wltimer {
+		if wordlen == S7wlbit || wordlen == S7wlcounter || wordlen == S7wltimer {
 			address = start
 			length = dataSize
 			request.Data[22] = byte(wordlen)
@@ -336,11 +336,11 @@ func (mb *client) writeArea(area int, dbnumber int, start int, amount int, wordl
 
 		// Transport Size
 		switch wordlen {
-		case s7wlbit:
+		case S7wlbit:
 			request.Data[32] = tsResBit
 			break
-		case s7wlcounter:
-		case s7wltimer:
+		case S7wlcounter:
+		case S7wltimer:
 			request.Data[32] = tsResOctet
 			break
 		default:
@@ -512,25 +512,25 @@ func responseError(response *ProtocolDataUnit) error {
 //dataSize to number of byte accordingly
 func dataSizeByte(wordLength int) int {
 	switch wordLength {
-	case s7wlbit:
+	case S7wlbit:
 		return 1
-	case s7wlbyte:
+	case S7wlbyte:
 		return 1
-	case s7wlChar:
+	case S7wlChar:
 		return 1
-	case s7wlword:
+	case S7wlword:
 		return 2
-	case s7wlint:
+	case S7wlint:
 		return 2
-	case s7wlcounter:
+	case S7wlcounter:
 		return 2
-	case s7wltimer:
+	case S7wltimer:
 		return 2
-	case s7wldword:
+	case S7wldword:
 		return 4
-	case s7wldint:
+	case S7wldint:
 		return 4
-	case s7wlreal:
+	case S7wlreal:
 		return 4
 	default:
 		return 0

@@ -46,7 +46,7 @@ func (mb *client) AGWriteMulti(dataItems []S7DataItem, itemsCount int) (err erro
 
 		// Adjusts the offset
 		var addr int
-		if dataItems[i].WordLen == s7wlbit || dataItems[i].WordLen == s7wlcounter || dataItems[i].WordLen == s7wltimer {
+		if dataItems[i].WordLen == S7wlbit || dataItems[i].WordLen == S7wlcounter || dataItems[i].WordLen == S7wltimer {
 			addr = dataItems[i].Start
 		} else {
 			addr = dataItems[i].Start * 8
@@ -68,18 +68,18 @@ func (mb *client) AGWriteMulti(dataItems []S7DataItem, itemsCount int) (err erro
 		s7ItemWrite[0] = 0
 		itemDataSize := 0
 		switch dataItems[i].WordLen {
-		case s7wlbit:
+		case S7wlbit:
 			s7ItemWrite[1] = tsResBit
 			itemDataSize = dataItems[i].Amount
 			binary.BigEndian.PutUint16(s7ItemWrite[2:], uint16(itemDataSize))
 			break
-		case s7wlcounter:
-		case s7wltimer:
+		case S7wlcounter:
+		case S7wltimer:
 			s7ItemWrite[1] = tsResOctet
 			itemDataSize = dataItems[i].Amount * 2
 			binary.BigEndian.PutUint16(s7ItemWrite[2:], uint16(itemDataSize))
 			break
-		case s7wlreal:
+		case S7wlreal:
 			s7ItemWrite[1] = tsResReal // real
 			itemDataSize = dataItems[i].Amount * dataSizeByte(dataItems[i].WordLen)
 			binary.BigEndian.PutUint16(s7ItemWrite[2:], uint16(itemDataSize))
@@ -156,16 +156,16 @@ func (mb *client) AGReadMulti(dataItems []S7DataItem, itemsCount int) (err error
 		copy(s7Item, s7MultiReadItemTelegram)
 		s7Item[3] = byte(dataItems[i].WordLen)
 		binary.BigEndian.PutUint16(s7Item[4:], uint16(dataItems[i].Amount))
-		if dataItems[i].Area == s7areadb {
+		if dataItems[i].Area == S7areadb {
 			binary.BigEndian.PutUint16(s7Item[6:], uint16(dataItems[i].DBNumber))
 		}
 		s7Item[8] = byte(dataItems[i].Area)
 
 		// Adjusts the offset
 		var addr int
-		if dataItems[i].WordLen == s7wlcounter || dataItems[i].WordLen == s7wltimer {
+		if dataItems[i].WordLen == S7wlcounter || dataItems[i].WordLen == S7wltimer {
 			addr = dataItems[i].Start
-		} else if dataItems[i].WordLen == s7wlbit {
+		} else if dataItems[i].WordLen == S7wlbit {
 			addr = dataItems[i].Start << 3
 			addr += dataItems[i].Bit // Add Bit addr
 		} else {

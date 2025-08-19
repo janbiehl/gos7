@@ -98,7 +98,7 @@ func (mb *client) PLCGetStatus() (status int, err error) {
 				} else {
 					// Since RUN status is always 8 for all CPUs and CPs, STOP status
 					// sometime can be coded as 3 (especially for old cpu...)
-					status = s7CpuStatusStop
+					status = S7CpuStatusStop
 				}
 
 			} else {

@@ -59,7 +59,7 @@ var s7ReadWriteTelegram = []byte{ // 31-35 bytes
 	18,             // Var spec.
 	10,             // Length of remaining bytes
 	16,             // Syntax ID
-	byte(s7wlbyte), // Transport Size idx=22
+	byte(S7wlbyte), // Transport Size idx=22
 	0, 0,           // Num Elements
 	0, 0, // DB Number (if any, else 0)
 	132,     // Area Type
@@ -88,7 +88,7 @@ var s7MultiReadItemTelegram = []byte{
 	18,             // Var spec.
 	10,             // Length of remaining bytes
 	16,             // Syntax ID
-	byte(s7wlbyte), // Transport Size idx=3
+	byte(S7wlbyte), // Transport Size idx=3
 	0, 0,           // Num Elements
 	0, 0, // DB Number (if any, else 0)
 	132,     // Area Type
@@ -113,7 +113,7 @@ var s7MultiWriteItemTelegram = []byte{
 	18,             // Var spec.
 	10,             // Length of remaining bytes
 	16,             // Syntax ID
-	byte(s7wlbyte), // Transport Size idx=3
+	byte(S7wlbyte), // Transport Size idx=3
 	0, 0,           // Num Elements
 	0, 0, // DB Number (if any, else 0)
 	132,     // Area Type
