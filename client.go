@@ -12,24 +12,41 @@ import (
 
 const (
 	// Area ID
-	S7areape = 0x81 //process inputs
-	S7areapa = 0x82 //process outputs
-	S7areamk = 0x83 //Merkers
-	S7areadb = 0x84 //DB
-	S7areact = 0x1C //counters
-	S7areatm = 0x1D //timers
+
+	// Area for inputs
+	S7areape = 0x81
+	// Area for ouputs
+	S7areapa = 0x82
+	// Area for Merkers
+	S7areamk = 0x83
+	// Area for data blocks
+	S7areadb = 0x84
+	// Area for counters
+	S7areact = 0x1C
+	// Area for timers
+	S7areatm = 0x1D
 
 	// Word Length
-	S7wlbit     = 0x01 //Bit (inside a word)
-	S7wlbyte    = 0x02 //Byte (8 bit)
+	// Bit (inside a word)
+	S7wlbit     = 0x01
+	// Byte (8 bit)
+	S7wlbyte    = 0x02
+	// Char (8 bit)
 	S7wlChar    = 0x03
-	S7wlword    = 0x04 //Word (16 bit)
+	// Word (16 bit)
+	S7wlword    = 0x04
+	// Int (16 bit)
 	S7wlint     = 0x05
-	S7wldword   = 0x06 //Double Word (32 bit)
+	// Double Word (32 bit)
+	S7wldword   = 0x06
+	// Double Int (32 bit)
 	S7wldint    = 0x07
-	S7wlreal    = 0x08 //Real (32 bit float)
-	S7wlcounter = 0x1C //Counter (16 bit)
-	S7wltimer   = 0x1D //Timer (16 bit)
+	// Real (32 bit float)
+	S7wlreal    = 0x08
+	// Counter (16 bit)
+	S7wlcounter = 0x1C
+	// Timer (16 bit)
+	S7wltimer   = 0x1D
 
 	// PLC Status
 	S7CpuStatusUnknown = 0
