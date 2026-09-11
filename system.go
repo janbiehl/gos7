@@ -177,5 +177,6 @@ func (mb *client) readSzl(id int, index int) (szl S7SZL, size int, err error) {
 		}
 		first = false
 	}
+	size = offset
 	return szl, size, err
 }
