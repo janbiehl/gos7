@@ -95,7 +95,7 @@ func (mb *client) GetCPInfo() (info S7CpInfo, err error) {
 
 //implement of GetOrderCode
 func (mb *client) GetOrderCode() (info S7OrderCode, err error) {
-	szl, size, err := mb.readSzl(0x0131, 0x000)
+	szl, size, err := mb.readSzl(0x0011, 0x000)
 	if err == nil {
 		info.Code = string(szl.Data[2 : 2+20])
 		info.V1 = szl.Data[size-3]
