@@ -85,11 +85,15 @@ func newSzlClient(frames ...[]byte) (*client, *szlTransporter) {
 }
 
 func TestGetOrderCode(t *testing.T) {
-	records := append(append(
+	// Records as returned by an IM151-8 PN/DP CPU (plcscan README): the boot
+	// loader record 0x0081 comes last, so the version must be taken from the
+	// basic firmware record 0x0007 and not from the end of the list.
+	records := append(append(append(
 		szl0011Record(0x0001, "6ES7 151-8AB01-0AB0", 0x00C0, 0x0002, 0x0001),
 		szl0011Record(0x0006, "6ES7 151-8AB01-0AB0", 0x00C0, 0x0002, 0x0001)...),
-		szl0011Record(0x0007, "", 0x00C0, 0x5603, 0x0206)...) // V3.2.6
-	c, tr := newSzlClient(szlFirst(0, true, 0x0011, 28, 3, records))
+		szl0011Record(0x0007, "", 0x00C0, 0x5603, 0x0206)...), // V3.2.6
+		szl0011Record(0x0081, "Boot Loader", 0x0000, 0x4120, 0x0909)...)
+	c, tr := newSzlClient(szlFirst(0, true, 0x0011, 28, 4, records))
 
 	info, err := c.GetOrderCode()
 	if err != nil {
@@ -106,6 +110,40 @@ func TestGetOrderCode(t *testing.T) {
 	}
 	if id := binary.BigEndian.Uint16(tr.requests[0][29:]); id != 0x0011 {
 		t.Errorf("requested SZL 0x%04X, want 0x0011", id)
+	}
+}
+
+func TestGetOrderCodeFallsBackToLastRecord(t *testing.T) {
+	// No 0x0007 record: keep Snap7's behaviour and use the last record.
+	records := append(
+		szl0011Record(0x0001, "6ES7 214-1AG40-0XB0", 0x0000, 0x0004, 0x0000),
+		szl0011Record(0x0006, "6ES7 214-1AG40-0XB0", 0x0000, 0x5604, 0x0100)...) // V4.1.0
+	c, _ := newSzlClient(szlFirst(0, true, 0x0011, 28, 2, records))
+
+	info, err := c.GetOrderCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Code != "6ES7 214-1AG40-0XB0 " {
+		t.Errorf("unexpected order code %q", info.Code)
+	}
+	if info.V1 != 4 || info.V2 != 1 || info.V3 != 0 {
+		t.Errorf("unexpected version %d.%d.%d", info.V1, info.V2, info.V3)
+	}
+}
+
+func TestGetOrderCodeHonoursRecordLength(t *testing.T) {
+	// LENTHDR larger than 28: records are stepped by the header value.
+	rec1 := append(szl0011Record(0x0001, "6ES7 516-3AN01-0AB0", 0x0000, 0x0001, 0x0000), 0xAA, 0xBB)
+	rec2 := append(szl0011Record(0x0007, "", 0x0000, 0x5602, 0x0901), 0xCC, 0xDD) // V2.9.1
+	c, _ := newSzlClient(szlFirst(0, true, 0x0011, 30, 2, append(rec1, rec2...)))
+
+	info, err := c.GetOrderCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.V1 != 2 || info.V2 != 9 || info.V3 != 1 {
+		t.Errorf("unexpected version %d.%d.%d", info.V1, info.V2, info.V3)
 	}
 }
 
