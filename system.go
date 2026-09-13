@@ -100,19 +100,52 @@ func (mb *client) GetCPInfo() (info S7CpInfo, err error) {
 }
 
 //implement of GetOrderCode
+//
+// SZL 0x0011 is a list of 28 byte records: index (2), MlfB (20), BGTyp (2),
+// Ausbg1 (2), Ausbe1 (2). Index 0x0001 carries the order number of the module
+// and index 0x0007 the basic firmware, whose Ausbg1 low byte and Ausbe1 hold
+// the version as <major>.<minor>.<patch>. CPUs may append further records
+// (e.g. 0x0081, firmware extension / boot loader), so the version is taken
+// from the 0x0007 record rather than from the last bytes of the list.
 func (mb *client) GetOrderCode() (info S7OrderCode, err error) {
-	szl, size, err := mb.readSzl(0x0011, 0x000)
-	// Data[2:22] is the order number of the first record; the version is read
-	// from the last three bytes, so at least one 22 byte record is required.
-	if err == nil && size < 22 {
+	const recordLen = 28
+	szl, _, err := mb.readSzl(0x0011, 0x000)
+	if err != nil {
+		return
+	}
+	if len(szl.Data) < recordLen {
 		err = fmt.Errorf(ErrorText(errCliInvalidPlcAnswer))
+		return
 	}
-	if err == nil {
-		info.Code = string(szl.Data[2 : 2+20])
-		info.V1 = szl.Data[size-3]
-		info.V2 = szl.Data[size-2]
-		info.V3 = szl.Data[size-1]
+	step := int(szl.Header.LengthHeader)
+	if step < recordLen {
+		step = recordLen
 	}
+	var module, firmware, last []byte
+	for off := 0; off+recordLen <= len(szl.Data); off += step {
+		rec := szl.Data[off : off+recordLen]
+		switch binary.BigEndian.Uint16(rec) {
+		case 0x0001:
+			if module == nil {
+				module = rec
+			}
+		case 0x0007:
+			if firmware == nil {
+				firmware = rec
+			}
+		}
+		last = rec
+	}
+	if module == nil {
+		module = szl.Data[:recordLen]
+	}
+	if firmware == nil {
+		firmware = last
+	}
+	info.Code = string(module[2:22])
+	info.V1 = firmware[25]
+	info.V2 = firmware[26]
+	info.V3 = firmware[27]
 	return
 }
 
