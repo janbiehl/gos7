@@ -47,7 +47,12 @@ func TestTCPTransporter(t *testing.T) {
 		t.Fatalf("unexpected response: %x", rsp)
 	}
 	time.Sleep(150 * time.Millisecond)
-	if client.conn != nil {
-		t.Fatalf("connection is not closed: %+v", client.conn)
+	// closeIdle runs on the timer goroutine and writes conn under mu; read it
+	// under the same lock so the race detector sees the synchronization.
+	client.mu.Lock()
+	conn := client.conn
+	client.mu.Unlock()
+	if conn != nil {
+		t.Fatalf("connection is not closed: %+v", conn)
 	}
 }
