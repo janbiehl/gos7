@@ -65,6 +65,9 @@ type S7CpInfo struct {
 func (mb *client) GetCPUInfo() (info S7CpuInfo, err error) {
 
 	szl, _, err := mb.readSzl(0x001C, 0x000)
+	if err == nil && len(szl.Data) < 204 {
+		err = fmt.Errorf(ErrorText(errCliInvalidPlcAnswer))
+	}
 	if err == nil {
 		moduleTypeName := string(szl.Data[172 : 172+32])
 		serialNumber := string(szl.Data[138 : 138+24])
@@ -84,6 +87,9 @@ func (mb *client) GetCPUInfo() (info S7CpuInfo, err error) {
 //implement of GetCPInfo
 func (mb *client) GetCPInfo() (info S7CpInfo, err error) {
 	szl, _, err := mb.readSzl(0x0131, 0x000)
+	if err == nil && len(szl.Data) < 12 {
+		err = fmt.Errorf(ErrorText(errCliInvalidPlcAnswer))
+	}
 	if err == nil {
 		info.MaxPduLength = int(binary.BigEndian.Uint16(szl.Data[2:]))
 		info.MaxConnections = int(binary.BigEndian.Uint16(szl.Data[4:]))
@@ -96,6 +102,11 @@ func (mb *client) GetCPInfo() (info S7CpInfo, err error) {
 //implement of GetOrderCode
 func (mb *client) GetOrderCode() (info S7OrderCode, err error) {
 	szl, size, err := mb.readSzl(0x0011, 0x000)
+	// Data[2:22] is the order number of the first record; the version is read
+	// from the last three bytes, so at least one 22 byte record is required.
+	if err == nil && size < 22 {
+		err = fmt.Errorf(ErrorText(errCliInvalidPlcAnswer))
+	}
 	if err == nil {
 		info.Code = string(szl.Data[2 : 2+20])
 		info.V1 = szl.Data[size-3]
@@ -106,22 +117,30 @@ func (mb *client) GetOrderCode() (info S7OrderCode, err error) {
 }
 
 //internal function readSZL
+//
+// Response layout (offsets into the raw frame, TPKT header included):
+//
+//	24 sequence, 26 last data unit (0x00 = last), 27-28 error code,
+//	29 return code (0xFF = ok), 31-32 data length,
+//	first slice:  33-34 SZL ID, 35-36 index, 37-38 LENTHDR, 39-40 N_DR, 41.. records
+//	next slices:  33.. records
 func (mb *client) readSzl(id int, index int) (szl S7SZL, size int, err error) {
-	var dataSZL int
+	const (
+		szlFirstDataOffset = 41 // records start after ID, index and the SZL header
+		szlNextDataOffset  = 33 // continuation slices carry records only
+	)
 	offset := 0
 	var done bool
 	first := true
 	var seqIn byte = 0x00
 	var seqOut uint16 = 0x0000
-	// szl = S7SZL{	}
-	// szl.Header.LengthHeader = 0
 	s7SZLFirst := make([]byte, len(s7SZLFirstTelegram))
 	copy(s7SZLFirst, s7SZLFirstTelegram)
 	s7SZLNext := make([]byte, len(s7SZLNextTelegram))
 	copy(s7SZLNext, s7SZLNextTelegram)
 	for !done && err == nil {
 		res := &ProtocolDataUnit{}
-		if first == true {
+		if first {
 			binary.BigEndian.PutUint16(s7SZLFirst[11:], seqOut+1)
 			binary.BigEndian.PutUint16(s7SZLFirst[29:], uint16(id))
 			binary.BigEndian.PutUint16(s7SZLFirst[31:], uint16(index))
@@ -142,39 +161,37 @@ func (mb *client) readSzl(id int, index int) (szl S7SZL, size int, err error) {
 			err = fmt.Errorf(ErrorText(errIsoInvalidPDU))
 			return
 		}
-		if binary.BigEndian.Uint16(res.Data[27:]) != 0 && res.Data[29] != byte(0xFF) {
+		if binary.BigEndian.Uint16(res.Data[27:]) != 0 {
 			err = fmt.Errorf(ErrorText(errCliInvalidPlcAnswer))
 			return
 		}
-		if first {
-			// Gets Amount of this slice
-			dataSZL = int(binary.BigEndian.Uint16(res.Data[31:])) - 8 // Skips extra params (ID, Index ...)
-			done = res.Data[26] == 0x00
-			seqIn = byte(res.Data[24]) // Slice sequence
-			//header
-			header := SZLHeader{}
-			header.LengthHeader = binary.BigEndian.Uint16(res.Data[37:])
-			header.NumberOfDataRecord = binary.BigEndian.Uint16(res.Data[39:])
-			//data
-			data := make([]byte, offset+dataSZL)
-			copy(data[offset:offset+dataSZL], res.Data[41:41+dataSZL])
-			//s7szl
-			szl.Header = header
-			szl.Data = data
-
-			offset += dataSZL
-			szl.Header.LengthHeader += szl.Header.LengthHeader
-		} else {
-			dataSZL = int(binary.BigEndian.Uint16(res.Data[31:]))
-			done = res.Data[26] == 0x00
-			seqIn = byte(res.Data[24]) // Slice sequence
-			data := make([]byte, offset+dataSZL)
-			szl.Data = data
-
-			copy(szl.Data[offset:offset+dataSZL], res.Data[37:37+dataSZL])
-			offset += dataSZL
-			szl.Header.LengthHeader += szl.Header.LengthHeader
+		if res.Data[29] != byte(0xFF) {
+			code := CPUError(uint(res.Data[29]))
+			if code == 0 {
+				code = errCliInvalidPlcAnswer
+			}
+			err = fmt.Errorf(ErrorText(code))
+			return
 		}
+		// Amount of this slice
+		dataSZL := int(binary.BigEndian.Uint16(res.Data[31:]))
+		dataOffset := szlNextDataOffset
+		if first {
+			dataSZL -= 8 // Skips extra params (ID, Index, LENTHDR, N_DR)
+			dataOffset = szlFirstDataOffset
+		}
+		if dataSZL < 0 || dataOffset+dataSZL > len(res.Data) {
+			err = fmt.Errorf(ErrorText(errIsoInvalidPDU))
+			return
+		}
+		done = res.Data[26] == 0x00
+		seqIn = byte(res.Data[24]) // Slice sequence
+		if first {
+			szl.Header.LengthHeader = binary.BigEndian.Uint16(res.Data[37:])
+			szl.Header.NumberOfDataRecord = binary.BigEndian.Uint16(res.Data[39:])
+		}
+		szl.Data = append(szl.Data, res.Data[dataOffset:dataOffset+dataSZL]...)
+		offset += dataSZL
 		first = false
 	}
 	size = offset
