@@ -1,5 +1,8 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# Build and test the gos7 module.
+#
+# Only the root package is built and tested: the test/ package needs a real
+# PLC at a fixed address and still imports github.com/robinson/gos7, so
+# `./...` cannot be used here.
 
 name: Go
 
@@ -7,22 +10,26 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
 
 jobs:
-
-  build:
+  build-test:
+    name: Go ${{ matrix.go }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [ "1.21", "stable" ]
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          check-latest: true
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build
+        run: go build -v .
 
-    #- name: Test
-    #  run: go test -v ./...
+      - name: Test
+        run: go test -race -count=1 -v .
