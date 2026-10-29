@@ -217,9 +217,10 @@ func (mb *tcpTransporter) connect() error {
 	//second stage: ISOTCP (ISO 8073) Connection
 	err = mb.isoConnect()
 	if err != nil {
-		if mb.conn != nil {
-			_ = mb.conn.Close()
-		}
+		// Close under the lock: the idle timer's closeIdle writes conn from its
+		// own goroutine. Close also clears conn, so a later Connect dials afresh
+		// instead of reusing the dead socket.
+		_ = mb.Close()
 		return err
 	}
 	// Third stage : S7 protocol data unit negotiation
