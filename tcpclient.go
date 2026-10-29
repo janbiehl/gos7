@@ -216,16 +216,17 @@ func (mb *tcpTransporter) connect() error {
 	}
 	//second stage: ISOTCP (ISO 8073) Connection
 	err = mb.isoConnect()
+	if err == nil {
+		// Third stage : S7 protocol data unit negotiation
+		err = mb.negotiatePduLength()
+	}
 	if err != nil {
 		// Close under the lock: the idle timer's closeIdle writes conn from its
 		// own goroutine. Close also clears conn, so a later Connect dials afresh
-		// instead of reusing the dead socket.
+		// instead of reusing a socket left mid-handshake.
 		_ = mb.Close()
-		return err
 	}
-	// Third stage : S7 protocol data unit negotiation
-	return mb.negotiatePduLength()
-
+	return err
 }
 
 func (mb *tcpTransporter) isoConnect() error {
